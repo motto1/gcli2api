@@ -1,4 +1,4 @@
-full_hash=343caf543a4c2dc4b2f483f9bf33c9a21996b22e
-short_hash=343caf5
-message=feat: 添加Dashboard页面路由和模型统计API
-date=2026-01-12 14:52:25 +0800
+full_hash=8480bedc6a4cc9534fbfd07ac5169e666200805c
+short_hash=8480bed
+message=debug: 在version/info API中添加后端类型诊断信息
+date=2026-01-12 15:44:23 +0800
