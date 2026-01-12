@@ -1917,6 +1917,15 @@ async def get_version_info(check_update: bool = False):
                     key, value = line.split('=', 1)
                     version_data[key] = value
 
+        # 获取存储后端信息
+        try:
+            storage_adapter = await get_storage_adapter()
+            backend_type = storage_adapter.get_backend_type()
+            has_stats = hasattr(storage_adapter._backend, 'get_model_usage_stats')
+        except Exception as e:
+            backend_type = f"error: {e}"
+            has_stats = False
+
         # 检查必要字段
         if 'short_hash' not in version_data:
             return JSONResponse({
@@ -1929,7 +1938,9 @@ async def get_version_info(check_update: bool = False):
             "version": version_data.get('short_hash', 'unknown'),
             "full_hash": version_data.get('full_hash', ''),
             "message": version_data.get('message', ''),
-            "date": version_data.get('date', '')
+            "date": version_data.get('date', ''),
+            "backend_type": backend_type,
+            "has_stats_method": has_stats
         }
 
         # 如果需要检查更新
