@@ -1,4 +1,4 @@
-full_hash=c282f4bb81e14db4e84699c23f457d01089d61da
-short_hash=c282f4b
-message=feat: 添加模型使用统计调用逻辑
-date=2026-01-12 15:59:15 +0800
+full_hash=01ab2f493ae9952a14d8d2d7662d261aad65c035
+short_hash=01ab2f4
+message=feat: 重构Dashboard柱状图为多模型分组样式
+date=2026-01-12 18:31:59 +0800
