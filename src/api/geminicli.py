@@ -259,7 +259,7 @@ async def stream_request(
                     # 只在第一个chunk时记录成功
                     if not success_recorded:
                         await record_api_call_success(
-                            credential_manager, current_file, mode="geminicli", model_key=model_group
+                            credential_manager, current_file, mode="geminicli", model_key=model_group, model_name=model_name
                         )
                         success_recorded = True
                         log.info(f"[GEMINICLI STREAM] 开始接收流式响应，模型: {model_name}")
@@ -393,7 +393,7 @@ async def non_stream_request(
             # 成功
             if status_code == 200:
                 await record_api_call_success(
-                    credential_manager, current_file, mode="geminicli", model_key=model_group
+                    credential_manager, current_file, mode="geminicli", model_key=model_group, model_name=model_name
                 )
                 # 创建响应头,移除压缩相关的header避免重复解压
                 response_headers = dict(response.headers)

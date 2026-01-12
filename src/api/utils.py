@@ -141,25 +141,65 @@ async def get_retry_config() -> Dict[str, Any]:
 
 # ==================== API调用结果记录 ====================
 
+def get_model_category(model_name: str) -> str:
+    """
+    根据模型名称获取统计分类
+
+    Args:
+        model_name: 模型名称
+
+    Returns:
+        "flash", "pro", 或 "v3"
+    """
+    if not model_name:
+        return "pro"  # 默认
+
+    model_lower = model_name.lower()
+
+    # 3.0 模型
+    if "gemini-3" in model_lower or "3-pro" in model_lower:
+        return "v3"
+    # Flash 模型
+    elif "flash" in model_lower:
+        return "flash"
+    # 2.5 Pro 模型（默认）
+    else:
+        return "pro"
+
+
 async def record_api_call_success(
     credential_manager: CredentialManager,
     credential_name: str,
     mode: str = "geminicli",
-    model_key: Optional[str] = None
+    model_key: Optional[str] = None,
+    model_name: Optional[str] = None
 ) -> None:
     """
     记录API调用成功
-    
+
     Args:
         credential_manager: 凭证管理器实例
         credential_name: 凭证名称
         mode: 模式（geminicli 或 antigravity）
         model_key: 模型键（用于模型级CD）
+        model_name: 模型名称（用于统计）
     """
     if credential_manager and credential_name:
         await credential_manager.record_api_call_result(
             credential_name, True, mode=mode, model_key=model_key
         )
+
+    # 仅对 geminicli 模式记录模型使用统计
+    if mode == "geminicli" and model_name:
+        try:
+            from src.storage_adapter import get_storage_adapter
+            storage_adapter = await get_storage_adapter()
+            if hasattr(storage_adapter._backend, 'increment_model_usage'):
+                model_category = get_model_category(model_name)
+                await storage_adapter._backend.increment_model_usage(model_category)
+                log.debug(f"Recorded model usage: {model_name} -> {model_category}")
+        except Exception as e:
+            log.debug(f"Failed to record model usage stats: {e}")
 
 
 async def record_api_call_error(
