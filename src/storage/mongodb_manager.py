@@ -91,6 +91,12 @@ class MongoDBManager:
         # 如果经常按错误码筛选，可以添加此索引
         await antigravity_credentials_collection.create_index("error_codes")
 
+        # 创建模型使用统计索引
+        stats_collection = self._db["model_usage_stats"]
+        await stats_collection.create_index([("model_category", 1), ("call_date", 1)], unique=True)
+        await stats_collection.create_index("model_category")
+        await stats_collection.create_index("call_date")
+
         log.debug("MongoDB indexes created")
 
     async def _load_config_cache(self):
@@ -875,3 +881,140 @@ class MongoDBManager:
         except Exception as e:
             log.error(f"Error setting model cooldown for {filename}: {e}")
             return False
+
+    # ============ 模型使用统计 ============
+
+    async def increment_model_usage(self, model_category: str) -> bool:
+        """
+        增加模型调用计数
+
+        Args:
+            model_category: 模型分类 ("flash", "pro", "v3")
+
+        Returns:
+            是否成功
+        """
+        self._ensure_initialized()
+
+        try:
+            import datetime
+            today = datetime.date.today().isoformat()
+
+            stats_collection = self._db["model_usage_stats"]
+
+            # 使用 upsert 更新或插入记录
+            await stats_collection.update_one(
+                {"model_category": model_category, "call_date": today},
+                {
+                    "$inc": {"call_count": 1},
+                    "$setOnInsert": {"created_at": time.time()},
+                    "$set": {"updated_at": time.time()}
+                },
+                upsert=True
+            )
+
+            log.debug(f"Incremented model usage: {model_category} for {today}")
+            return True
+
+        except Exception as e:
+            log.error(f"Error incrementing model usage: {e}")
+            return False
+
+    async def get_model_usage_stats(self) -> Dict[str, Dict[str, int]]:
+        """
+        获取模型调用统计数据（今日和总计）
+
+        Returns:
+            包含各模型今日和总计调用次数的字典
+        """
+        self._ensure_initialized()
+
+        try:
+            import datetime
+            today = datetime.date.today().isoformat()
+
+            stats_collection = self._db["model_usage_stats"]
+            result = {
+                "flash": {"today": 0, "total": 0},
+                "pro": {"today": 0, "total": 0},
+                "v3": {"today": 0, "total": 0},
+            }
+
+            # 获取所有统计数据
+            cursor = stats_collection.find({})
+            async for doc in cursor:
+                category = doc.get("model_category")
+                call_date = doc.get("call_date")
+                call_count = doc.get("call_count", 0)
+
+                if category in result:
+                    # 累加总计
+                    result[category]["total"] += call_count
+                    # 如果是今天的数据，更新今日统计
+                    if call_date == today:
+                        result[category]["today"] = call_count
+
+            return result
+
+        except Exception as e:
+            log.error(f"Error getting model usage stats: {e}")
+            return {
+                "flash": {"today": 0, "total": 0},
+                "pro": {"today": 0, "total": 0},
+                "v3": {"today": 0, "total": 0},
+            }
+
+    async def get_model_usage_history(self, days: int = 7) -> list:
+        """
+        获取模型调用历史统计（最近N天）
+
+        Args:
+            days: 获取最近N天的数据
+
+        Returns:
+            包含每日各模型调用次数的列表，按日期倒序排列
+        """
+        self._ensure_initialized()
+
+        try:
+            import datetime
+
+            # 计算起始日期
+            today = datetime.date.today()
+            start_date = today - datetime.timedelta(days=days - 1)
+
+            stats_collection = self._db["model_usage_stats"]
+
+            # 查询日期范围内的数据
+            cursor = stats_collection.find({
+                "call_date": {"$gte": start_date.isoformat()}
+            }).sort("call_date", -1)
+
+            # 按日期分组
+            date_stats = {}
+            async for doc in cursor:
+                call_date = doc.get("call_date")
+                category = doc.get("model_category")
+                count = doc.get("call_count", 0)
+
+                if call_date not in date_stats:
+                    date_stats[call_date] = {
+                        "date": call_date,
+                        "flash": 0,
+                        "pro": 0,
+                        "v3": 0,
+                        "total": 0
+                    }
+
+                if category in ["flash", "pro", "v3"]:
+                    date_stats[call_date][category] = count
+                    date_stats[call_date]["total"] += count
+
+            # 转换为列表并按日期倒序排列
+            result = sorted(date_stats.values(), key=lambda x: x["date"], reverse=True)
+
+            return result
+
+        except Exception as e:
+            log.error(f"Error getting model usage history: {e}")
+            return []
