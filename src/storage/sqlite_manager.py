@@ -246,6 +246,35 @@ class SQLiteManager:
             ON model_usage_stats(call_date)
         """)
 
+        # API 使用日志表
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS api_usage_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp REAL NOT NULL,
+                model TEXT NOT NULL,
+                total_time REAL,
+                first_token_time REAL,
+                is_stream INTEGER DEFAULT 0,
+                input_tokens INTEGER DEFAULT 0,
+                output_tokens INTEGER DEFAULT 0,
+                client_ip TEXT,
+                mode TEXT DEFAULT 'geminicli',
+                success INTEGER DEFAULT 1,
+                error_message TEXT,
+                created_at REAL DEFAULT (unixepoch())
+            )
+        """)
+
+        # 创建索引 - API 使用日志表
+        await db.execute("""
+            CREATE INDEX IF NOT EXISTS idx_api_logs_timestamp
+            ON api_usage_logs(timestamp DESC)
+        """)
+        await db.execute("""
+            CREATE INDEX IF NOT EXISTS idx_api_logs_model
+            ON api_usage_logs(model)
+        """)
+
         log.debug("SQLite tables and indexes created")
 
     async def _load_config_cache(self):
@@ -1171,3 +1200,165 @@ class SQLiteManager:
         except Exception as e:
             log.error(f"Error getting model usage history: {e}")
             return []
+
+    # ============ API 使用日志 ============
+
+    async def add_api_usage_log(
+        self,
+        model: str,
+        total_time: float = None,
+        first_token_time: float = None,
+        is_stream: bool = False,
+        input_tokens: int = 0,
+        output_tokens: int = 0,
+        client_ip: str = None,
+        mode: str = "geminicli",
+        success: bool = True,
+        error_message: str = None
+    ) -> bool:
+        """
+        添加 API 使用日志
+
+        Args:
+            model: 模型名称
+            total_time: 总用时（秒）
+            first_token_time: 首字时间（秒）
+            is_stream: 是否流式
+            input_tokens: 输入 token 数
+            output_tokens: 输出 token 数
+            client_ip: 客户端 IP
+            mode: 模式（geminicli 或 antigravity）
+            success: 是否成功
+            error_message: 错误信息
+
+        Returns:
+            是否成功
+        """
+        self._ensure_initialized()
+
+        try:
+            async with aiosqlite.connect(self._db_path) as db:
+                await db.execute("""
+                    INSERT INTO api_usage_logs
+                    (timestamp, model, total_time, first_token_time, is_stream,
+                     input_tokens, output_tokens, client_ip, mode, success, error_message)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    time.time(),
+                    model,
+                    total_time,
+                    first_token_time,
+                    1 if is_stream else 0,
+                    input_tokens,
+                    output_tokens,
+                    client_ip,
+                    mode,
+                    1 if success else 0,
+                    error_message
+                ))
+                await db.commit()
+
+            log.debug(f"Added API usage log: {model}")
+            return True
+
+        except Exception as e:
+            log.error(f"Error adding API usage log: {e}")
+            return False
+
+    async def get_api_usage_logs(
+        self,
+        limit: int = 50,
+        offset: int = 0,
+        mode: str = None,
+        start_time: float = None,
+        end_time: float = None
+    ) -> dict:
+        """
+        获取 API 使用日志
+
+        Args:
+            limit: 返回数量限制
+            offset: 偏移量
+            mode: 过滤模式（可选）
+            start_time: 开始时间戳（可选）
+            end_time: 结束时间戳（可选）
+
+        Returns:
+            包含日志列表和总数的字典
+        """
+        self._ensure_initialized()
+
+        try:
+            async with aiosqlite.connect(self._db_path) as db:
+                # 构建查询条件
+                conditions = []
+                params = []
+
+                if mode:
+                    conditions.append("mode = ?")
+                    params.append(mode)
+
+                if start_time is not None:
+                    conditions.append("timestamp >= ?")
+                    params.append(start_time)
+
+                if end_time is not None:
+                    conditions.append("timestamp <= ?")
+                    params.append(end_time)
+
+                where_clause = ""
+                if conditions:
+                    where_clause = "WHERE " + " AND ".join(conditions)
+
+                # 获取总数
+                count_sql = f"SELECT COUNT(*) FROM api_usage_logs {where_clause}"
+                async with db.execute(count_sql, params) as cursor:
+                    total = (await cursor.fetchone())[0]
+
+                # 获取日志列表
+                query_sql = f"""
+                    SELECT id, timestamp, model, total_time, first_token_time,
+                           is_stream, input_tokens, output_tokens, client_ip,
+                           mode, success, error_message
+                    FROM api_usage_logs
+                    {where_clause}
+                    ORDER BY timestamp DESC
+                    LIMIT ? OFFSET ?
+                """
+                query_params = params + [limit, offset]
+
+                async with db.execute(query_sql, query_params) as cursor:
+                    rows = await cursor.fetchall()
+
+                logs = []
+                for row in rows:
+                    logs.append({
+                        "id": row[0],
+                        "timestamp": row[1],
+                        "model": row[2],
+                        "total_time": row[3],
+                        "first_token_time": row[4],
+                        "is_stream": bool(row[5]),
+                        "input_tokens": row[6],
+                        "output_tokens": row[7],
+                        "client_ip": row[8],
+                        "mode": row[9],
+                        "success": bool(row[10]),
+                        "error_message": row[11]
+                    })
+
+                return {
+                    "logs": logs,
+                    "total": total,
+                    "limit": limit,
+                    "offset": offset
+                }
+
+        except Exception as e:
+            log.error(f"Error getting API usage logs: {e}")
+            return {
+                "logs": [],
+                "total": 0,
+                "limit": limit,
+                "offset": offset
+            }

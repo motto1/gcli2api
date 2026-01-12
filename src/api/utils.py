@@ -167,12 +167,66 @@ def get_model_category(model_name: str) -> str:
         return "pro"
 
 
+async def record_api_usage_log(
+    model: str,
+    total_time: float = None,
+    first_token_time: float = None,
+    is_stream: bool = False,
+    input_tokens: int = 0,
+    output_tokens: int = 0,
+    client_ip: str = None,
+    mode: str = "geminicli",
+    success: bool = True,
+    error_message: str = None
+) -> None:
+    """
+    记录 API 使用日志
+
+    Args:
+        model: 模型名称
+        total_time: 总用时（秒）
+        first_token_time: 首字时间（秒）
+        is_stream: 是否流式
+        input_tokens: 输入 token 数
+        output_tokens: 输出 token 数
+        client_ip: 客户端 IP
+        mode: 模式（geminicli 或 antigravity）
+        success: 是否成功
+        error_message: 错误信息
+    """
+    try:
+        from src.storage_adapter import get_storage_adapter
+        storage_adapter = await get_storage_adapter()
+        if hasattr(storage_adapter._backend, 'add_api_usage_log'):
+            await storage_adapter._backend.add_api_usage_log(
+                model=model,
+                total_time=total_time,
+                first_token_time=first_token_time,
+                is_stream=is_stream,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                client_ip=client_ip,
+                mode=mode,
+                success=success,
+                error_message=error_message
+            )
+    except Exception as e:
+        log.debug(f"Failed to record API usage log: {e}")
+
+
 async def record_api_call_success(
     credential_manager: CredentialManager,
     credential_name: str,
     mode: str = "geminicli",
     model_key: Optional[str] = None,
-    model_name: Optional[str] = None
+    model_name: Optional[str] = None,
+    is_stream: bool = False,
+    client_ip: str = None,
+    input_tokens: int = 0,
+    output_tokens: int = 0,
+    total_time: float = None,
+    first_token_time: float = None,
+    skip_usage_log: bool = False
 ) -> None:
     """
     记录API调用成功
@@ -183,6 +237,13 @@ async def record_api_call_success(
         mode: 模式（geminicli 或 antigravity）
         model_key: 模型键（用于模型级CD）
         model_name: 模型名称（用于统计）
+        is_stream: 是否流式请求
+        client_ip: 客户端IP
+        input_tokens: 输入token数
+        output_tokens: 输出token数
+        total_time: 总用时（秒）
+        first_token_time: 首字时间（秒）
+        skip_usage_log: 是否跳过使用日志记录（流式请求在结束后单独记录）
     """
     if credential_manager and credential_name:
         await credential_manager.record_api_call_result(
@@ -201,6 +262,20 @@ async def record_api_call_success(
         except Exception as e:
             log.debug(f"Failed to record model usage stats: {e}")
 
+    # 记录API使用日志（流式请求可以跳过，在结束后单独记录）
+    if model_name and not skip_usage_log:
+        await record_api_usage_log(
+            model=model_name,
+            total_time=total_time,
+            first_token_time=first_token_time,
+            is_stream=is_stream,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            client_ip=client_ip,
+            mode=mode,
+            success=True
+        )
+
 
 async def record_api_call_error(
     credential_manager: CredentialManager,
@@ -208,11 +283,15 @@ async def record_api_call_error(
     status_code: int,
     cooldown_until: Optional[float] = None,
     mode: str = "geminicli",
-    model_key: Optional[str] = None
+    model_key: Optional[str] = None,
+    model_name: Optional[str] = None,
+    is_stream: bool = False,
+    error_message: Optional[str] = None,
+    total_time: float = None
 ) -> None:
     """
     记录API调用错误
-    
+
     Args:
         credential_manager: 凭证管理器实例
         credential_name: 凭证名称
@@ -220,6 +299,10 @@ async def record_api_call_error(
         cooldown_until: 冷却截止时间（Unix时间戳）
         mode: 模式（geminicli 或 antigravity）
         model_key: 模型键（用于模型级CD）
+        model_name: 模型名称（用于日志记录）
+        is_stream: 是否流式请求
+        error_message: 错误信息
+        total_time: 总用时（秒）
     """
     if credential_manager and credential_name:
         await credential_manager.record_api_call_result(
@@ -229,6 +312,17 @@ async def record_api_call_error(
             cooldown_until=cooldown_until,
             mode=mode,
             model_key=model_key
+        )
+
+    # 记录API使用日志（失败情况）
+    if model_name:
+        await record_api_usage_log(
+            model=model_name,
+            total_time=total_time,
+            is_stream=is_stream,
+            mode=mode,
+            success=False,
+            error_message=error_message or f"HTTP {status_code}"
         )
 
 

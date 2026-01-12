@@ -436,6 +436,376 @@
             margin-bottom: 24px;
             display: none;
         }
+
+        /* 标签页内容 */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* 使用日志表格 */
+        .logs-container {
+            background-color: #1e2533;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .logs-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px;
+            border-bottom: 1px solid #2a3142;
+        }
+
+        .logs-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #e7e9ea;
+        }
+
+        .logs-refresh-btn {
+            background-color: #8b5cf6;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .logs-refresh-btn:hover {
+            background-color: #7c3aed;
+        }
+
+        .logs-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .logs-table th,
+        .logs-table td {
+            padding: 14px 16px;
+            text-align: left;
+            border-bottom: 1px solid #2a3142;
+        }
+
+        .logs-table th {
+            background-color: #252d3d;
+            color: #9ca3af;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .logs-table td {
+            color: #e7e9ea;
+            font-size: 14px;
+        }
+
+        .logs-table tr:hover {
+            background-color: rgba(139, 92, 246, 0.05);
+        }
+
+        .log-time {
+            color: #9ca3af;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        .log-model {
+            color: #8b5cf6;
+            font-weight: 500;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .log-duration {
+            color: #10b981;
+            font-family: monospace;
+        }
+
+        .log-stream {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .log-stream.yes {
+            background-color: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .log-stream.no {
+            background-color: rgba(156, 163, 175, 0.2);
+            color: #9ca3af;
+        }
+
+        .log-tokens {
+            font-family: monospace;
+            color: #06b6d4;
+        }
+
+        .log-ip {
+            color: #9ca3af;
+            font-family: monospace;
+            font-size: 13px;
+        }
+
+        .logs-pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            border-top: 1px solid #2a3142;
+        }
+
+        .logs-pagination button {
+            background-color: #252d3d;
+            color: #e7e9ea;
+            border: 1px solid #2a3142;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .logs-pagination button:hover:not(:disabled) {
+            background-color: #8b5cf6;
+            border-color: #8b5cf6;
+        }
+
+        .logs-pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .logs-pagination span {
+            color: #9ca3af;
+            font-size: 14px;
+        }
+
+        .logs-empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: #9ca3af;
+        }
+
+        .logs-empty-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .logs-empty-text {
+            font-size: 16px;
+        }
+
+        /* 日志筛选器 */
+        .logs-filter {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logs-filter select {
+            background-color: #252d3d;
+            color: #e7e9ea;
+            border: 1px solid #2a3142;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .logs-filter select:hover {
+            border-color: #8b5cf6;
+        }
+
+        /* 柱状图容器 - 深色主题 */
+        .logs-chart-container {
+            padding: 24px;
+            background: #1e2533;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #2a3142;
+        }
+
+        .logs-chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 20px;
+        }
+
+        .logs-chart-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #e7e9ea;
+        }
+
+        .logs-chart-summary {
+            font-size: 14px;
+            color: #9ca3af;
+        }
+
+        .logs-chart-wrapper {
+            display: flex;
+            gap: 12px;
+        }
+
+        .chart-y-axis {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding-bottom: 32px;
+            min-width: 30px;
+        }
+
+        .chart-y-ticks {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+            align-items: flex-end;
+            padding-right: 8px;
+        }
+
+        .chart-y-tick {
+            font-size: 12px;
+            color: #6b7280;
+            line-height: 1;
+        }
+
+        .chart-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-x: auto;
+        }
+
+        .logs-chart {
+            height: 200px;
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+            position: relative;
+            border-bottom: 1px solid #2a3142;
+            padding: 0 4px;
+        }
+
+        .chart-grid-line {
+            position: absolute;
+            left: 0;
+            right: 0;
+            border-top: 1px solid #2a3142;
+            pointer-events: none;
+        }
+
+        .chart-time-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 50px;
+            flex: 1;
+        }
+
+        .chart-bars-wrapper {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 2px;
+            height: 100%;
+            min-height: 180px;
+        }
+
+        .chart-bar {
+            width: 14px;
+            border-radius: 2px 2px 0 0;
+            min-height: 2px;
+            transition: opacity 0.2s ease;
+            cursor: pointer;
+        }
+
+        .chart-bar:hover {
+            opacity: 0.8;
+        }
+
+        .chart-bar.flash {
+            background-color: #fbbf24;
+        }
+
+        .chart-bar.pro {
+            background-color: #67e8f9;
+        }
+
+        .chart-bar.v3 {
+            background-color: #1e40af;
+        }
+
+        .chart-time-label {
+            font-size: 10px;
+            color: #6b7280;
+            margin-top: 8px;
+            white-space: nowrap;
+            text-align: center;
+        }
+
+        .chart-no-data {
+            width: 100%;
+            text-align: center;
+            color: #6b7280;
+            font-size: 14px;
+            padding: 60px 0;
+        }
+
+        /* 图例 - 深色主题 */
+        .chart-legend {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #2a3142;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+
+        .legend-color.flash {
+            background-color: #fbbf24;
+        }
+
+        .legend-color.pro {
+            background-color: #67e8f9;
+        }
+
+        .legend-color.v3 {
+            background-color: #1e40af;
+        }
     </style>
 </head>
 
@@ -462,16 +832,17 @@
     <div class="main-container">
         <!-- 标签页导航 -->
         <div class="tabs-nav">
-            <div class="tab-item active">个人统计</div>
-            <div class="tab-item">凭证管理</div>
-            <div class="tab-item">API密钥</div>
+            <div class="tab-item active" onclick="switchTab('stats')">个人统计</div>
+            <div class="tab-item" onclick="switchTab('logs')">使用日志</div>
         </div>
 
         <!-- 错误提示区域 -->
         <div id="errorMessage" class="error-message"></div>
 
-        <!-- 页面标题 -->
-        <h1 class="page-title">个人使用统计</h1>
+        <!-- 个人统计标签页 -->
+        <div id="statsTab" class="tab-content active">
+            <!-- 页面标题 -->
+            <h1 class="page-title">个人使用统计</h1>
 
         <!-- 小卡片网格 -->
         <div class="stats-grid">
@@ -524,6 +895,79 @@
             <div class="expandable-content" id="historyContent">
                 <div class="history-list">
                     <div class="no-data">点击展开查看历史数据</div>
+                </div>
+            </div>
+        </div>
+        </div>
+
+        <!-- 使用日志标签页 -->
+        <div id="logsTab" class="tab-content">
+            <h1 class="page-title">使用日志</h1>
+            <div class="logs-container">
+                <div class="logs-header">
+                    <span class="logs-title">API 调用记录</span>
+                    <div class="logs-filter">
+                        <select id="dateRangeSelect" onchange="onDateRangeChange()">
+                            <option value="today">今天</option>
+                            <option value="yesterday">昨天</option>
+                            <option value="week">最近7天</option>
+                            <option value="month">最近30天</option>
+                            <option value="all" selected>全部</option>
+                        </select>
+                        <button class="logs-refresh-btn" onclick="loadLogs()">刷新</button>
+                    </div>
+                </div>
+                <!-- 柱状图区域 - ultrathink 风格 -->
+                <div class="logs-chart-container">
+                    <div class="logs-chart-header">
+                        <div class="logs-chart-title">模型调用分布</div>
+                        <div class="logs-chart-summary" id="chartSummary">总计: 0 次</div>
+                    </div>
+                    <div class="logs-chart-wrapper">
+                        <div class="chart-y-axis">
+                            <div class="chart-y-ticks" id="chartYTicks"></div>
+                        </div>
+                        <div class="chart-main">
+                            <div id="logsChart" class="logs-chart"></div>
+                        </div>
+                    </div>
+                    <div class="chart-legend">
+                        <div class="legend-item">
+                            <div class="legend-color flash"></div>
+                            <span>Flash 模型</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color pro"></div>
+                            <span>Pro 模型</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color v3"></div>
+                            <span>3.0 模型</span>
+                        </div>
+                    </div>
+                </div>
+                <div id="logsTableContainer">
+                    <table class="logs-table">
+                        <thead>
+                            <tr>
+                                <th>时间</th>
+                                <th>模型</th>
+                                <th>用时/首字</th>
+                                <th>流</th>
+                                <th>输入</th>
+                                <th>输出</th>
+                                <th>IP</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logsTableBody">
+                            <tr><td colspan="7" class="logs-empty"><div class="logs-empty-icon">📋</div><div class="logs-empty-text">暂无日志数据</div></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="logs-pagination">
+                    <button id="prevPageBtn" onclick="prevPage()" disabled>上一页</button>
+                    <span id="pageInfo">第 1 页</span>
+                    <button id="nextPageBtn" onclick="nextPage()" disabled>下一页</button>
                 </div>
             </div>
         </div>
@@ -656,6 +1100,399 @@
 
         // 每60秒自动刷新
         setInterval(loadStats, 60000);
+
+        // 标签页切换
+        function switchTab(tabName) {
+            // 更新标签页样式
+            document.querySelectorAll('.tab-item').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            if (tabName === 'stats') {
+                document.querySelector('.tab-item:nth-child(1)').classList.add('active');
+                document.getElementById('statsTab').classList.add('active');
+            } else if (tabName === 'logs') {
+                document.querySelector('.tab-item:nth-child(2)').classList.add('active');
+                document.getElementById('logsTab').classList.add('active');
+                loadLogs();
+            }
+        }
+
+        // 日志分页状态
+        let logsCurrentPage = 1;
+        const logsPageSize = 20;
+        let logsTotalCount = 0;
+        let currentDateRange = 'all';
+        let allLogsForChart = [];  // 存储用于图表的所有日志
+
+        // 获取时间范围
+        function getTimeRange(range) {
+            const now = new Date();
+            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+            switch (range) {
+                case 'today':
+                    return {
+                        start: todayStart.getTime() / 1000,
+                        end: now.getTime() / 1000
+                    };
+                case 'yesterday':
+                    const yesterdayStart = new Date(todayStart);
+                    yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+                    return {
+                        start: yesterdayStart.getTime() / 1000,
+                        end: todayStart.getTime() / 1000
+                    };
+                case 'week':
+                    const weekStart = new Date(todayStart);
+                    weekStart.setDate(weekStart.getDate() - 7);
+                    return {
+                        start: weekStart.getTime() / 1000,
+                        end: now.getTime() / 1000
+                    };
+                case 'month':
+                    const monthStart = new Date(todayStart);
+                    monthStart.setDate(monthStart.getDate() - 30);
+                    return {
+                        start: monthStart.getTime() / 1000,
+                        end: now.getTime() / 1000
+                    };
+                default:
+                    return { start: null, end: null };
+            }
+        }
+
+        // 日期范围变化
+        function onDateRangeChange() {
+            currentDateRange = document.getElementById('dateRangeSelect').value;
+            logsCurrentPage = 1;
+            loadLogs();
+        }
+
+        // 加载日志数据
+        async function loadLogs() {
+            try {
+                const offset = (logsCurrentPage - 1) * logsPageSize;
+                const timeRange = getTimeRange(currentDateRange);
+
+                let url = `/stats/api-usage-logs?limit=${logsPageSize}&offset=${offset}`;
+                if (timeRange.start !== null) {
+                    url += `&start_time=${timeRange.start}`;
+                }
+                if (timeRange.end !== null) {
+                    url += `&end_time=${timeRange.end}`;
+                }
+
+                const response = await fetch(url);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    logsTotalCount = data.total;
+                    renderLogs(data.logs);
+                    updatePagination();
+
+                    // 加载图表数据（获取更多数据用于图表）
+                    loadChartData();
+                } else {
+                    document.getElementById('logsTableBody').innerHTML =
+                        '<tr><td colspan="7" class="logs-empty"><div class="logs-empty-icon">❌</div><div class="logs-empty-text">加载失败</div></td></tr>';
+                }
+            } catch (error) {
+                console.error('加载日志失败:', error);
+                document.getElementById('logsTableBody').innerHTML =
+                    '<tr><td colspan="7" class="logs-empty"><div class="logs-empty-icon">❌</div><div class="logs-empty-text">加载失败，请稍后重试</div></td></tr>';
+            }
+        }
+
+        // 加载图表数据
+        async function loadChartData() {
+            try {
+                const timeRange = getTimeRange(currentDateRange);
+
+                // 获取更多数据用于图表（最多1000条）
+                let url = `/stats/api-usage-logs?limit=1000&offset=0`;
+                if (timeRange.start !== null) {
+                    url += `&start_time=${timeRange.start}`;
+                }
+                if (timeRange.end !== null) {
+                    url += `&end_time=${timeRange.end}`;
+                }
+
+                const response = await fetch(url);
+                if (!response.ok) return;
+
+                const data = await response.json();
+                if (data.success && data.logs) {
+                    allLogsForChart = data.logs;
+                    renderChart();
+                }
+            } catch (error) {
+                console.error('加载图表数据失败:', error);
+            }
+        }
+
+        // 渲染柱状图 - 深色主题 + 完整时间轴
+        function renderChart() {
+            const chartContainer = document.getElementById('logsChart');
+            const yTicksContainer = document.getElementById('chartYTicks');
+            const summaryEl = document.getElementById('chartSummary');
+
+            // 模型分类函数
+            function getModelCategory(modelName) {
+                if (!modelName) return 'flash';
+                const name = modelName.toLowerCase();
+                if (name.includes('3.0') || name.includes('v3') || name.includes('gemini-3')) {
+                    return 'v3';
+                } else if (name.includes('pro') || name.includes('2.5-pro') || name.includes('2.0-pro')) {
+                    return 'pro';
+                }
+                return 'flash';
+            }
+
+            // 根据时间范围决定分组粒度
+            const granularity = (currentDateRange === 'today' || currentDateRange === 'yesterday') ? 'hour' : 'day';
+
+            // 生成完整时间轴序列
+            function generateTimeAxis() {
+                const timeSlots = [];
+                const now = new Date();
+
+                if (currentDateRange === 'today') {
+                    // 今天：生成完整 24 小时
+                    const month = String(now.getMonth() + 1).padStart(2, '0');
+                    const day = String(now.getDate()).padStart(2, '0');
+                    for (let h = 0; h < 24; h++) {
+                        const hour = String(h).padStart(2, '0');
+                        timeSlots.push(`${month}-${day} ${hour}:00`);
+                    }
+                } else if (currentDateRange === 'yesterday') {
+                    // 昨天：生成完整 24 小时
+                    const yesterday = new Date(now);
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    const month = String(yesterday.getMonth() + 1).padStart(2, '0');
+                    const day = String(yesterday.getDate()).padStart(2, '0');
+                    for (let h = 0; h < 24; h++) {
+                        const hour = String(h).padStart(2, '0');
+                        timeSlots.push(`${month}-${day} ${hour}:00`);
+                    }
+                } else if (currentDateRange === 'week') {
+                    // 最近7天
+                    for (let i = 6; i >= 0; i--) {
+                        const d = new Date(now);
+                        d.setDate(d.getDate() - i);
+                        const month = String(d.getMonth() + 1).padStart(2, '0');
+                        const day = String(d.getDate()).padStart(2, '0');
+                        timeSlots.push(`${month}-${day}`);
+                    }
+                } else if (currentDateRange === 'month') {
+                    // 最近30天
+                    for (let i = 29; i >= 0; i--) {
+                        const d = new Date(now);
+                        d.setDate(d.getDate() - i);
+                        const month = String(d.getMonth() + 1).padStart(2, '0');
+                        const day = String(d.getDate()).padStart(2, '0');
+                        timeSlots.push(`${month}-${day}`);
+                    }
+                } else {
+                    // 全部：从数据中获取时间范围
+                    return null; // 返回 null 表示使用数据自带的时间
+                }
+                return timeSlots;
+            }
+
+            // 按时间+模型分组统计
+            const groups = {};
+            let totalCount = 0;
+
+            if (allLogsForChart && allLogsForChart.length > 0) {
+                allLogsForChart.forEach(log => {
+                    const date = new Date(log.timestamp * 1000);
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    let timeKey;
+
+                    if (granularity === 'hour') {
+                        const hour = String(date.getHours()).padStart(2, '0');
+                        timeKey = `${month}-${day} ${hour}:00`;
+                    } else {
+                        timeKey = `${month}-${day}`;
+                    }
+
+                    const category = getModelCategory(log.model);
+
+                    if (!groups[timeKey]) {
+                        groups[timeKey] = { flash: 0, pro: 0, v3: 0 };
+                    }
+                    groups[timeKey][category]++;
+                    totalCount++;
+                });
+            }
+
+            // 更新总计
+            summaryEl.textContent = `总计: ${totalCount.toLocaleString()} 次`;
+
+            // 获取完整时间轴
+            let timeAxis = generateTimeAxis();
+
+            if (timeAxis === null) {
+                // "全部"模式：使用数据自带的时间，排序
+                timeAxis = Object.keys(groups).sort();
+            }
+
+            // 如果没有时间轴数据，显示空状态
+            if (timeAxis.length === 0) {
+                chartContainer.innerHTML = '<div class="chart-no-data">暂无数据</div>';
+                yTicksContainer.innerHTML = '';
+                return;
+            }
+
+            // 确保所有时间点都有数据结构
+            timeAxis.forEach(key => {
+                if (!groups[key]) {
+                    groups[key] = { flash: 0, pro: 0, v3: 0 };
+                }
+            });
+
+            // 计算最大值用于缩放（取单个柱子的最大值）
+            let maxCount = 0;
+            timeAxis.forEach(key => {
+                const g = groups[key];
+                maxCount = Math.max(maxCount, g.flash, g.pro, g.v3);
+            });
+
+            // 确保最大值至少为 5，避免刻度太小
+            maxCount = Math.max(maxCount, 5);
+            const maxHeight = 180;
+
+            // 生成Y轴刻度（0, 5, 10, 15, 20 风格）
+            const tickCount = 4;
+            const tickStep = Math.ceil(maxCount / tickCount);
+            const adjustedMax = tickStep * tickCount;
+
+            let yTicksHtml = '';
+            for (let i = tickCount; i >= 0; i--) {
+                const value = tickStep * i;
+                yTicksHtml += `<span class="chart-y-tick">${value}</span>`;
+            }
+            yTicksContainer.innerHTML = yTicksHtml;
+
+            // 生成柱状图HTML
+            let html = '';
+
+            // 添加网格线
+            for (let i = 1; i <= tickCount; i++) {
+                const bottom = (i / tickCount) * maxHeight;
+                html += `<div class="chart-grid-line" style="bottom: ${bottom}px;"></div>`;
+            }
+
+            // 添加时间分组柱子
+            timeAxis.forEach(timeKey => {
+                const g = groups[timeKey];
+                const hasData = g.flash > 0 || g.pro > 0 || g.v3 > 0;
+
+                // 计算各模型柱子高度
+                const flashHeight = adjustedMax > 0 ? Math.max(g.flash > 0 ? 2 : 0, (g.flash / adjustedMax) * maxHeight) : 0;
+                const proHeight = adjustedMax > 0 ? Math.max(g.pro > 0 ? 2 : 0, (g.pro / adjustedMax) * maxHeight) : 0;
+                const v3Height = adjustedMax > 0 ? Math.max(g.v3 > 0 ? 2 : 0, (g.v3 / adjustedMax) * maxHeight) : 0;
+
+                // 显示标签：小时模式只显示小时，日期模式显示日期
+                const displayLabel = granularity === 'hour' ? timeKey.split(' ')[1] : timeKey;
+
+                html += `
+                    <div class="chart-time-group">
+                        <div class="chart-bars-wrapper">
+                            ${g.flash > 0 ? `<div class="chart-bar flash" style="height: ${flashHeight}px;" title="Flash: ${g.flash}"></div>` : ''}
+                            ${g.pro > 0 ? `<div class="chart-bar pro" style="height: ${proHeight}px;" title="Pro: ${g.pro}"></div>` : ''}
+                            ${g.v3 > 0 ? `<div class="chart-bar v3" style="height: ${v3Height}px;" title="3.0: ${g.v3}"></div>` : ''}
+                        </div>
+                        <div class="chart-time-label">${displayLabel}</div>
+                    </div>
+                `;
+            });
+
+            chartContainer.innerHTML = html;
+        }
+
+        // 渲染日志表格
+        function renderLogs(logs) {
+            const tbody = document.getElementById('logsTableBody');
+
+            if (!logs || logs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="logs-empty"><div class="logs-empty-icon">📋</div><div class="logs-empty-text">暂无日志数据</div></td></tr>';
+                return;
+            }
+
+            let html = '';
+            logs.forEach(log => {
+                const time = formatLogTime(log.timestamp);
+                const duration = formatDuration(log.total_time, log.first_token_time);
+                const streamClass = log.is_stream ? 'yes' : 'no';
+                const streamText = log.is_stream ? '是' : '否';
+
+                html += `
+                    <tr>
+                        <td class="log-time">${time}</td>
+                        <td class="log-model" title="${log.model}">${log.model}</td>
+                        <td class="log-duration">${duration}</td>
+                        <td><span class="log-stream ${streamClass}">${streamText}</span></td>
+                        <td class="log-tokens">${formatNumber(log.input_tokens)}</td>
+                        <td class="log-tokens">${formatNumber(log.output_tokens)}</td>
+                        <td class="log-ip">${log.client_ip || '-'}</td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        // 格式化日志时间
+        function formatLogTime(timestamp) {
+            if (!timestamp) return '-';
+            const date = new Date(timestamp * 1000);
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+            return `${month}-${day} ${hours}:${minutes}:${seconds}`;
+        }
+
+        // 格式化用时
+        function formatDuration(totalTime, firstTokenTime) {
+            if (totalTime === null && firstTokenTime === null) return '-';
+            const total = totalTime !== null ? totalTime.toFixed(2) + 's' : '-';
+            const first = firstTokenTime !== null ? firstTokenTime.toFixed(2) + 's' : '-';
+            return `${total} / ${first}`;
+        }
+
+        // 更新分页状态
+        function updatePagination() {
+            const totalPages = Math.ceil(logsTotalCount / logsPageSize) || 1;
+            document.getElementById('pageInfo').textContent = `第 ${logsCurrentPage} / ${totalPages} 页`;
+            document.getElementById('prevPageBtn').disabled = logsCurrentPage <= 1;
+            document.getElementById('nextPageBtn').disabled = logsCurrentPage >= totalPages;
+        }
+
+        // 上一页
+        function prevPage() {
+            if (logsCurrentPage > 1) {
+                logsCurrentPage--;
+                loadLogs();
+            }
+        }
+
+        // 下一页
+        function nextPage() {
+            const totalPages = Math.ceil(logsTotalCount / logsPageSize);
+            if (logsCurrentPage < totalPages) {
+                logsCurrentPage++;
+                loadLogs();
+            }
+        }
     </script>
 </body>
 

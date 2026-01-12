@@ -15,6 +15,7 @@ if __name__ == "__main__":
 
 import asyncio
 import json
+import time
 from typing import Any, Dict, Optional
 
 from fastapi import Response
@@ -32,6 +33,7 @@ from src.api.utils import (
     record_api_call_success,
     record_api_call_error,
     parse_and_log_cooldown,
+    record_api_usage_log,
 )
 from src.utils import GEMINICLI_USER_AGENT
 
@@ -189,6 +191,8 @@ async def stream_request(
     for attempt in range(max_retries + 1):
         success_recorded = False  # 标记是否已记录成功
         need_retry = False  # 标记是否需要重试
+        request_start_time = time.time()  # 请求开始时间
+        first_token_time = None  # 首字时间
 
         try:
             async for chunk in stream_post_async(
@@ -201,10 +205,12 @@ async def stream_request(
                 if isinstance(chunk, Response):
                     status_code = chunk.status_code
                     last_error_response = chunk  # 记录最后一次错误
+                    total_time = time.time() - request_start_time
 
                     # 如果错误码是429或者在禁用码当中，做好记录后进行重试
                     if status_code == 429 or status_code in DISABLE_ERROR_CODES:
                         # 解析错误响应内容
+                        error_body = ""
                         try:
                             error_body = chunk.body.decode('utf-8') if isinstance(chunk.body, bytes) else str(chunk.body)
                             log.warning(f"[GEMINICLI STREAM] 流式请求失败 (status={status_code}), 凭证: {current_file}, 响应: {error_body[:500]}")
@@ -216,14 +222,17 @@ async def stream_request(
                         if status_code == 429:
                             # 尝试解析冷却时间
                             try:
-                                error_body = chunk.body.decode('utf-8') if isinstance(chunk.body, bytes) else str(chunk.body)
+                                if not error_body:
+                                    error_body = chunk.body.decode('utf-8') if isinstance(chunk.body, bytes) else str(chunk.body)
                                 cooldown_until = await parse_and_log_cooldown(error_body, mode="geminicli")
                             except Exception:
                                 pass
 
                         await record_api_call_error(
                             credential_manager, current_file, status_code,
-                            cooldown_until, mode="geminicli", model_key=model_group
+                            cooldown_until, mode="geminicli", model_key=model_group,
+                            model_name=model_name, is_stream=True, error_message=error_body[:500] if error_body else None,
+                            total_time=total_time
                         )
 
                         # 检查是否应该重试
@@ -243,6 +252,7 @@ async def stream_request(
                             return
                     else:
                         # 错误码不在禁用码当中，直接返回，无需重试
+                        error_body = ""
                         try:
                             error_body = chunk.body.decode('utf-8') if isinstance(chunk.body, bytes) else str(chunk.body)
                             log.error(f"[GEMINICLI STREAM] 流式请求失败，非重试错误码 (status={status_code}), 凭证: {current_file}, 响应: {error_body[:500]}")
@@ -250,16 +260,23 @@ async def stream_request(
                             log.error(f"[GEMINICLI STREAM] 流式请求失败，非重试错误码 (status={status_code}), 凭证: {current_file}")
                         await record_api_call_error(
                             credential_manager, current_file, status_code,
-                            None, mode="geminicli", model_key=model_group
+                            None, mode="geminicli", model_key=model_group,
+                            model_name=model_name, is_stream=True, error_message=error_body[:500] if error_body else None,
+                            total_time=total_time
                         )
                         yield chunk
                         return
                 else:
                     # 不是Response，说明是真流，直接yield返回
-                    # 只在第一个chunk时记录成功
+                    # 记录首字时间
+                    if first_token_time is None:
+                        first_token_time = time.time() - request_start_time
+
+                    # 只在第一个chunk时记录凭证成功（跳过使用日志，在流结束后记录）
                     if not success_recorded:
                         await record_api_call_success(
-                            credential_manager, current_file, mode="geminicli", model_key=model_group, model_name=model_name
+                            credential_manager, current_file, mode="geminicli", model_key=model_group, model_name=model_name,
+                            is_stream=True, first_token_time=first_token_time, skip_usage_log=True
                         )
                         success_recorded = True
                         log.info(f"[GEMINICLI STREAM] 开始接收流式响应，模型: {model_name}")
@@ -268,14 +285,27 @@ async def stream_request(
 
             # 流式请求完成，检查结果
             if success_recorded:
-                log.info(f"[GEMINICLI STREAM] 流式响应完成，模型: {model_name}")
+                total_time = time.time() - request_start_time
+                log.info(f"[GEMINICLI STREAM] 流式响应完成，模型: {model_name}, 总用时: {total_time:.2f}s")
+                # 在流结束后记录使用日志
+                await record_api_usage_log(
+                    model=model_name,
+                    total_time=total_time,
+                    first_token_time=first_token_time,
+                    is_stream=True,
+                    mode="geminicli",
+                    success=True
+                )
                 return
             elif not need_retry:
                 # 没有收到任何数据（空回复），需要重试
+                total_time = time.time() - request_start_time
                 log.warning(f"[GEMINICLI STREAM] 收到空回复，无任何内容，凭证: {current_file}")
                 await record_api_call_error(
                     credential_manager, current_file, 200,
-                    None, mode="geminicli", model_key=model_group
+                    None, mode="geminicli", model_key=model_group,
+                    model_name=model_name, is_stream=True, error_message="Empty response",
+                    total_time=total_time
                 )
                 
                 if attempt < max_retries:
@@ -380,6 +410,7 @@ async def non_stream_request(
     last_error_response = None  # 记录最后一次的错误响应
 
     for attempt in range(max_retries + 1):
+        request_start_time = time.time()  # 请求开始时间
         try:
             response = await post_async(
                 url=target_url,
@@ -389,11 +420,26 @@ async def non_stream_request(
             )
 
             status_code = response.status_code
+            total_time = time.time() - request_start_time
 
             # 成功
             if status_code == 200:
+                # 尝试解析 token 信息
+                input_tokens = 0
+                output_tokens = 0
+                try:
+                    response_data = json.loads(response.content)
+                    usage_metadata = response_data.get("response", {}).get("usageMetadata", {})
+                    if not usage_metadata:
+                        usage_metadata = response_data.get("usageMetadata", {})
+                    input_tokens = usage_metadata.get("promptTokenCount", 0)
+                    output_tokens = usage_metadata.get("candidatesTokenCount", 0)
+                except Exception:
+                    pass
+
                 await record_api_call_success(
-                    credential_manager, current_file, mode="geminicli", model_key=model_group, model_name=model_name
+                    credential_manager, current_file, mode="geminicli", model_key=model_group, model_name=model_name,
+                    is_stream=False, total_time=total_time, input_tokens=input_tokens, output_tokens=output_tokens
                 )
                 # 创建响应头,移除压缩相关的header避免重复解压
                 response_headers = dict(response.headers)
@@ -433,7 +479,9 @@ async def non_stream_request(
                 # 记录错误并禁用凭证
                 await record_api_call_error(
                     credential_manager, current_file, status_code,
-                    None, mode="geminicli", model_key=model_group
+                    None, mode="geminicli", model_key=model_group,
+                    model_name=model_name, is_stream=False, error_message=error_text[:500] if error_text else None,
+                    total_time=total_time
                 )
                 # 尝试切换到新凭证并重试
                 if attempt < max_retries:
@@ -481,7 +529,9 @@ async def non_stream_request(
 
                 await record_api_call_error(
                     credential_manager, current_file, status_code,
-                    cooldown_until, mode="geminicli", model_key=model_group
+                    cooldown_until, mode="geminicli", model_key=model_group,
+                    model_name=model_name, is_stream=False, error_message=error_text[:500] if error_text else None,
+                    total_time=total_time
                 )
 
                 # 检查是否应该重试
@@ -522,7 +572,15 @@ async def non_stream_request(
                     return last_error_response
 
         except Exception as e:
+            total_time = time.time() - request_start_time
             log.error(f"非流式请求异常: {e}, 凭证: {current_file}")
+            # 记录异常到日志
+            await record_api_call_error(
+                credential_manager, current_file, 0,
+                None, mode="geminicli", model_key=model_group,
+                model_name=model_name, is_stream=False, error_message=str(e)[:500],
+                total_time=total_time
+            )
             if attempt < max_retries:
                 log.info(f"[NON-STREAM] 异常后重试 (attempt {attempt + 2}/{max_retries + 1})...")
                 await asyncio.sleep(retry_interval)

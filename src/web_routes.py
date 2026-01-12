@@ -2081,5 +2081,60 @@ async def get_model_usage_history(days: int = 7):
         )
 
 
+@router.get("/stats/api-usage-logs")
+async def get_api_usage_logs(
+    limit: int = 50,
+    offset: int = 0,
+    mode: str = None,
+    start_time: float = None,
+    end_time: float = None
+):
+    """
+    获取 API 使用日志（无需认证，供 Dashboard 使用）
 
+    Args:
+        limit: 返回数量限制（默认50）
+        offset: 偏移量（默认0）
+        mode: 过滤模式（可选，geminicli 或 antigravity）
+        start_time: 开始时间戳（可选）
+        end_time: 结束时间戳（可选）
 
+    Returns:
+        包含日志列表和分页信息的响应
+    """
+    try:
+        storage_adapter = await get_storage_adapter()
+
+        # 检查后端是否支持日志功能
+        if hasattr(storage_adapter._backend, 'get_api_usage_logs'):
+            result = await storage_adapter._backend.get_api_usage_logs(
+                limit=limit,
+                offset=offset,
+                mode=mode,
+                start_time=start_time,
+                end_time=end_time
+            )
+            return JSONResponse(content={
+                "success": True,
+                **result
+            })
+        else:
+            # 后端不支持日志功能
+            return JSONResponse(content={
+                "success": True,
+                "logs": [],
+                "total": 0,
+                "limit": limit,
+                "offset": offset,
+                "message": "日志功能仅在 SQLite 后端可用"
+            })
+
+    except Exception as e:
+        log.error(f"获取 API 使用日志失败: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "error": str(e)
+            }
+        )
