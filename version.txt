@@ -1,4 +1,4 @@
-full_hash=deae390d1b6a5a138a3b5a53655ac1e8ccae1668
-short_hash=deae390
-message=Update models.py
-date=2026-01-11 22:35:29 +0800
+full_hash=9f7ebf51f5d6b7601aa304fe332e009d2ee10002
+short_hash=9f7ebf5
+message=feat: 添加MongoDB模型统计支持并优化Dashboard卡片样式
+date=2026-01-12 11:55:06 +0800
