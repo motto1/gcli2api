@@ -187,9 +187,9 @@ def is_mobile_user_agent(user_agent: str) -> bool:
     return any(keyword in user_agent_lower for keyword in mobile_keywords)
 
 
-@router.get("/", response_class=HTMLResponse)
+@router.get("/admin", response_class=HTMLResponse)
 async def serve_control_panel(request: Request):
-    """提供统一控制面板"""
+    """提供统一控制面板（管理员后台）"""
     try:
         user_agent = request.headers.get("user-agent", "")
         is_mobile = is_mobile_user_agent(user_agent)
@@ -205,6 +205,36 @@ async def serve_control_panel(request: Request):
 
     except Exception as e:
         log.error(f"加载控制面板页面失败: {e}")
+        raise HTTPException(status_code=500, detail="服务器内部错误")
+
+
+@router.get("/", response_class=HTMLResponse)
+async def serve_dashboard(request: Request):
+    """提供 Dashboard 主页"""
+    try:
+        html_file_path = "front/dashboard.html"
+
+        with open(html_file_path, "r", encoding="utf-8") as f:
+            html_content = f.read()
+        return HTMLResponse(content=html_content)
+
+    except Exception as e:
+        log.error(f"加载 Dashboard 页面失败: {e}")
+        raise HTTPException(status_code=500, detail="服务器内部错误")
+
+
+@router.get("/dashboard", response_class=HTMLResponse)
+async def serve_dashboard_explicit(request: Request):
+    """提供 Dashboard 主页（显式路径）"""
+    try:
+        html_file_path = "front/dashboard.html"
+
+        with open(html_file_path, "r", encoding="utf-8") as f:
+            html_content = f.read()
+        return HTMLResponse(content=html_content)
+
+    except Exception as e:
+        log.error(f"加载 Dashboard 页面失败: {e}")
         raise HTTPException(status_code=500, detail="服务器内部错误")
 
 
@@ -1952,6 +1982,92 @@ async def get_version_info(check_update: bool = False):
             "success": False,
             "error": str(e)
         })
+
+
+# =============================================================================
+# 模型调用统计 API (Model Usage Stats API)
+# =============================================================================
+
+
+@router.get("/stats/model-usage")
+async def get_model_usage_stats():
+    """
+    获取模型调用统计数据（无需认证，供 Dashboard 使用）
+
+    Returns:
+        包含 flash、pro、v3 三类模型的今日和总调用次数
+    """
+    try:
+        storage_adapter = await get_storage_adapter()
+
+        # 检查后端是否支持统计功能
+        if hasattr(storage_adapter._backend, 'get_model_usage_stats'):
+            stats = await storage_adapter._backend.get_model_usage_stats()
+            return JSONResponse(content={
+                "success": True,
+                "flash": stats.get("flash", {"today": 0, "total": 0}),
+                "pro": stats.get("pro", {"today": 0, "total": 0}),
+                "v3": stats.get("v3", {"today": 0, "total": 0}),
+            })
+        else:
+            # 后端不支持统计功能
+            return JSONResponse(content={
+                "success": True,
+                "flash": {"today": 0, "total": 0},
+                "pro": {"today": 0, "total": 0},
+                "v3": {"today": 0, "total": 0},
+                "message": "统计功能仅在 SQLite 后端可用"
+            })
+
+    except Exception as e:
+        log.error(f"获取模型调用统计失败: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "error": str(e)
+            }
+        )
+
+
+@router.get("/stats/model-usage-history")
+async def get_model_usage_history(days: int = 7):
+    """
+    获取模型调用历史统计数据（最近N天）
+
+    Args:
+        days: 获取最近N天的数据（默认7天）
+
+    Returns:
+        包含每日各模型调用次数的历史数据
+    """
+    try:
+        storage_adapter = await get_storage_adapter()
+
+        # 检查后端是否支持统计功能
+        if hasattr(storage_adapter._backend, 'get_model_usage_history'):
+            history = await storage_adapter._backend.get_model_usage_history(days)
+            return JSONResponse(content={
+                "success": True,
+                "history": history
+            })
+        else:
+            # 后端不支持统计功能
+            return JSONResponse(content={
+                "success": True,
+                "history": [],
+                "message": "统计功能仅在 SQLite 后端可用"
+            })
+
+    except Exception as e:
+        log.error(f"获取模型调用历史失败: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "error": str(e)
+            }
+        )
 
 
 
