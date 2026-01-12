@@ -223,6 +223,29 @@ class SQLiteManager:
             )
         """)
 
+        # 模型调用统计表
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS model_usage_stats (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                model_category TEXT NOT NULL,
+                call_date TEXT NOT NULL,
+                call_count INTEGER DEFAULT 0,
+                created_at REAL DEFAULT (unixepoch()),
+                updated_at REAL DEFAULT (unixepoch()),
+                UNIQUE(model_category, call_date)
+            )
+        """)
+
+        # 创建索引 - 模型统计表
+        await db.execute("""
+            CREATE INDEX IF NOT EXISTS idx_model_usage_category
+            ON model_usage_stats(model_category)
+        """)
+        await db.execute("""
+            CREATE INDEX IF NOT EXISTS idx_model_usage_date
+            ON model_usage_stats(call_date)
+        """)
+
         log.debug("SQLite tables and indexes created")
 
     async def _load_config_cache(self):
@@ -1005,3 +1028,146 @@ class SQLiteManager:
         except Exception as e:
             log.error(f"Error setting model cooldown for {filename}: {e}")
             return False
+
+    # ============ 模型调用统计 ============
+
+    async def increment_model_usage(self, model_category: str) -> bool:
+        """
+        增加模型调用计数
+
+        Args:
+            model_category: 模型分类 ("flash", "pro", "v3")
+
+        Returns:
+            是否成功
+        """
+        self._ensure_initialized()
+
+        try:
+            import datetime
+            today = datetime.date.today().isoformat()
+
+            async with aiosqlite.connect(self._db_path) as db:
+                # 使用 UPSERT 语法
+                await db.execute("""
+                    INSERT INTO model_usage_stats (model_category, call_date, call_count, created_at, updated_at)
+                    VALUES (?, ?, 1, unixepoch(), unixepoch())
+                    ON CONFLICT(model_category, call_date) DO UPDATE SET
+                        call_count = call_count + 1,
+                        updated_at = unixepoch()
+                """, (model_category, today))
+                await db.commit()
+
+                log.debug(f"Incremented model usage: {model_category} for {today}")
+                return True
+
+        except Exception as e:
+            log.error(f"Error incrementing model usage for {model_category}: {e}")
+            return False
+
+    async def get_model_usage_stats(self) -> dict:
+        """
+        获取模型调用统计
+
+        Returns:
+            包含各模型今日和总调用次数的字典
+        """
+        self._ensure_initialized()
+
+        try:
+            import datetime
+            today = datetime.date.today().isoformat()
+
+            result = {
+                "flash": {"today": 0, "total": 0},
+                "pro": {"today": 0, "total": 0},
+                "v3": {"today": 0, "total": 0},
+            }
+
+            async with aiosqlite.connect(self._db_path) as db:
+                # 获取今日调用次数
+                async with db.execute("""
+                    SELECT model_category, call_count
+                    FROM model_usage_stats
+                    WHERE call_date = ?
+                """, (today,)) as cursor:
+                    rows = await cursor.fetchall()
+                    for category, count in rows:
+                        if category in result:
+                            result[category]["today"] = count
+
+                # 获取总调用次数
+                async with db.execute("""
+                    SELECT model_category, SUM(call_count) as total
+                    FROM model_usage_stats
+                    GROUP BY model_category
+                """) as cursor:
+                    rows = await cursor.fetchall()
+                    for category, total in rows:
+                        if category in result:
+                            result[category]["total"] = total or 0
+
+            return result
+
+        except Exception as e:
+            log.error(f"Error getting model usage stats: {e}")
+            return {
+                "flash": {"today": 0, "total": 0},
+                "pro": {"today": 0, "total": 0},
+                "v3": {"today": 0, "total": 0},
+            }
+
+    async def get_model_usage_history(self, days: int = 7) -> list:
+        """
+        获取模型调用历史统计（最近N天）
+
+        Args:
+            days: 获取最近N天的数据
+
+        Returns:
+            包含每日各模型调用次数的列表，按日期倒序排列
+        """
+        self._ensure_initialized()
+
+        try:
+            import datetime
+
+            # 计算起始日期
+            today = datetime.date.today()
+            start_date = today - datetime.timedelta(days=days - 1)
+
+            result = []
+
+            async with aiosqlite.connect(self._db_path) as db:
+                # 获取日期范围内的所有数据
+                async with db.execute("""
+                    SELECT call_date, model_category, call_count
+                    FROM model_usage_stats
+                    WHERE call_date >= ?
+                    ORDER BY call_date DESC
+                """, (start_date.isoformat(),)) as cursor:
+                    rows = await cursor.fetchall()
+
+                    # 按日期分组
+                    date_stats = {}
+                    for call_date, category, count in rows:
+                        if call_date not in date_stats:
+                            date_stats[call_date] = {
+                                "date": call_date,
+                                "flash": 0,
+                                "pro": 0,
+                                "v3": 0,
+                                "total": 0
+                            }
+                        if category in ["flash", "pro", "v3"]:
+                            date_stats[call_date][category] = count
+                            date_stats[call_date]["total"] += count
+
+                    # 转换为列表并按日期倒序排列
+                    result = sorted(date_stats.values(), key=lambda x: x["date"], reverse=True)
+
+            return result
+
+        except Exception as e:
+            log.error(f"Error getting model usage history: {e}")
+            return []
