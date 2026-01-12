@@ -1,4 +1,4 @@
-full_hash=9f7ebf51f5d6b7601aa304fe332e009d2ee10002
-short_hash=9f7ebf5
-message=feat: 添加MongoDB模型统计支持并优化Dashboard卡片样式
-date=2026-01-12 11:55:06 +0800
+full_hash=343caf543a4c2dc4b2f483f9bf33c9a21996b22e
+short_hash=343caf5
+message=feat: 添加Dashboard页面路由和模型统计API
+date=2026-01-12 14:52:25 +0800
